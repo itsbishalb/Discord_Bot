@@ -3,9 +3,13 @@ const {
 } = require('googleapis');
 require('dotenv').config();
 const time_regex = /(\d{2}):(\d{2}):\d{2}/;
+var hour_regex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
 // Provide the required configuration
 const CREDENTIALS = JSON.parse(process.env.CRED);
 const calendarId = process.env.CAL_ID;
+
+
+
 
 // Google calendar API settings
 const SCOPES = 'https://www.googleapis.com/auth/calendar';
@@ -45,15 +49,25 @@ const getEvents = async (dateTimeStart, dateTimeEnd) => {
 };
 
 
-function isValidDate(year, month, day, date) {
+async function isValidDate(year, month, day, date) {
     return date.getFullYear() == year &&
-        date.getMonth() == month - 1 &&
+        date.getMonth() == month &&
         date.getDate() == day;
 }
 
+async function checkHour(hour){
+    return hour_regex.test(hour);
+}
 // Get date-time string for calender
 const dateTimeForCalander = async (day, month, year, timeStart, duration) => {
-    let date = new Date(year, month - 1, day);
+    if(!checkHour(timeStart)){
+        console.log("wrong time format for start time")
+        return;
+    }else if(!checkHour(duration)){
+        console.log("wrong time format for duration")
+        return;
+    }
+    let date = new Date(year, month, day);
     duration = duration > 2 ? 2 : duration;
     if (!isValidDate(year, month, day, date)) {
         console.log("not valid")
@@ -74,7 +88,7 @@ const dateTimeForCalander = async (day, month, year, timeStart, duration) => {
     if (minute < 10) {
         minute = `0${minute}`;
     }
-    let newDateTime = `${year}-${month}-${day}T${hour}:${minute}:00.000${TIMEOFFSET}`;
+    let newDateTime = `${year}-${month}-${day}T${hour}:${minute}.000${TIMEOFFSET}`;
 
     let event = new Date(Date.parse(newDateTime));
 
@@ -118,13 +132,12 @@ const insertEvent = async (event) => {
             return 0;
         }
     } catch (error) {
-        console.log(`Error at insertEvent --> ${error}`);
-        return 0;
+        return (`Error at insertEvent --> ${error}`);
     }
 };
 
-async function handleNewEvent() {
-    let dateTime = await dateTimeForCalander(03, 03, 2023, 3, 2);
+ async function handleNewEvent(day, month, year, timeStart, duration) {
+    let dateTime = await dateTimeForCalander(day, month, year, timeStart, duration);
     if (dateTime != null) {
         // Event for Google Calendar
         let event = {
@@ -144,15 +157,16 @@ async function handleNewEvent() {
                 console.log(res);
             })
             .catch((err) => {
+                console.log("error happened here")
                 console.log(err);
             });
     }
 
 }
 
-handleNewEvent()
 
-function getEventForDay(year, month, day) {
+
+ function getEventForDay(year, month, day) {
     month = month < 10 ? `0${month}` : month
     day = day < 10 ? `0${day}` : day
 
@@ -177,9 +191,9 @@ function getEventForDay(year, month, day) {
         });
 }
 
-getEventForDay(2023, 03, 03);
+// getEventForDay(2023, 03, 03);
 
-const deleteEvent = async (eventId) => {
+ const deleteEvent = async (eventId) => {
 
     try {
         let response = await calendar.events.delete({
@@ -198,14 +212,4 @@ const deleteEvent = async (eventId) => {
         return 0;
     }
 };
-
-let eventId = '0tfnbr1rpqi11fp451lvrt162s';
-
-// deleteEvent(eventId)
-//     .then((res) => {
-//         console.log('deleted');
-//         console.log(res);
-//     })
-//     .catch((err) => {
-//         console.log(err);
-//     });
+module.exports = {deleteEvent, insertEvent, handleNewEvent,checkHour};
