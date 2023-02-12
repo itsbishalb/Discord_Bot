@@ -3,7 +3,7 @@ const {
 } = require('googleapis');
 require('dotenv').config();
 const time_regex = /(\d{2}):(\d{2}):\d{2}/;
-var hour_regex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+
 // Provide the required configuration
 const CREDENTIALS = JSON.parse(process.env.CRED);
 const calendarId = process.env.CAL_ID;
@@ -56,6 +56,8 @@ async function isValidDate(year, month, day, date) {
 }
 
 async function checkHour(hour){
+    var hour_regex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    console.log(hour)
     return hour_regex.test(hour);
 }
 // Get date-time string for calender

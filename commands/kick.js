@@ -5,6 +5,10 @@ const {
 	handleNewEvent,
 	checkHour
 } = require('../index');
+
+async function isValidNumber(number){
+	return (/^[0-9]+$/).test(number);
+}
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('kick')
@@ -15,34 +19,44 @@ module.exports = {
 		.addStringOption(option => option.setName('starting-time').setDescription('Starting Hour (e.g. HH:MM => 04:30)'))
 		.addStringOption(option => option.setName('duration').setDescription('Duration (e.g. HH:MM => 04:30)')),
 	async execute(interaction) {
-		var date = {
-			year: interaction.options.getInteger('year'),
-			month: parseInt(interaction.options.getInteger('month')),
-			day: parseInt(interaction.options.getInteger('day')),
-			startingtime: interaction.options.getString('starting-time'),
-			duration: interaction.options.getString('duration'),
+		let year = interaction.options.getInteger('year');
+		let month = interaction.options.getInteger('month');
+		let day =  parseInt(interaction.options.getInteger('day'));
+		let startingTime = interaction.options.getString('starting-time');
+		let hours = startingTime.split(":")[0];
+		let minutes = startingTime.split(":")[1];
 
-		};
+		console.log("Hours " + hours + "Minutes " + minutes)
+		console.log(typeof(minutes))
+		if(await !isValidNumber(hours)) {
+			return interaction.reply("Please input start time in this format HH:MM");
+		}
+		
+		if(minutes != '00' && minutes != '30'){
+			return interaction.reply("Please input start time in this format HH:MM in increment of 30");
+		}
 
-		if (!checkHour(date.startingtime)) {
+
+		if(await !isValidNumber(minutes) ){
+			return interaction.reply("Please input start time in this format HH:MM");
+		}
+		hours = hours < 10 ? `0${hours}` : hours;
+		minutes = (minutes < 10 && minutes > 0) ? `0${minutes}` : minutes;
+		let duration = interaction.options.getString('duration');
+		startingTime = hours + ":" + minutes;
+		
+		if (!await checkHour(startingTime)) {
 			return interaction.reply("Invalid Start Time Please enter hour in (HH:MM) format like 23:00 for 11 PM")
-		} else if (!checkHour(date.duration)) {
-			return interaction.reply("Invalid Start Time Please enter hour in (HH:MM) format like 1:00 for 1 hour")
 		}
-		if (date.month < 1 || date.month > 12) {
-			return interaction.reply('Month invalid');
-		}
-		if (date.day < 1 || date.day > 31) {
-			return interaction.reply('Day invalid');
-		}
+		
 		let wantedDate;
 		try {
-			wantedDate = new Date(date.year, date.month - 1 , date.day)
+			wantedDate = new Date(year,month - 1 ,day)
 		} catch (err) {
 			return interaction.reply('Invalid Date');
 		}
 
-		if (!(wantedDate.getFullYear() ==  date.year && wantedDate.getMonth() ==  (date.month-1) && wantedDate.getDate() == date.day)) {
+		if (!(wantedDate.getFullYear() ==  year && wantedDate.getMonth() ==  (month-1) && wantedDate.getDate() == day)) {
 			return interaction.reply('Invalid Date: Please check date');
 		}
 		if (await weekDiff(wantedDate) > 2 ) {
@@ -55,7 +69,7 @@ module.exports = {
 		// // var member = interaction.options.getString('date');
 		// var actualdate = new Date(date.year, date.month, date.day);
 
-		await handleNewEvent(date.day, date.month, date.year, date.startingtime, date.duration)
+		await handleNewEvent(day, month, year, startingTime, duration)
 		// var dString = actualdate.toLocaleDateString()
 		// await interaction.reply(dString);
 	},
